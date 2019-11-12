@@ -2,7 +2,10 @@
 # https://hub.docker.com/_/python
 FROM python:3.7
 
-# Copy local code to the container image.
+# chrome-driver用のライブラリ(これを入れないとエラーになる)
+RUN apt-get update && apt-get install -y libnss3-dev
+
+# ローカルのファイルをコンテナへ移す
 ENV APP_HOME /app
 WORKDIR $APP_HOME
 COPY . .

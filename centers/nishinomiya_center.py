@@ -4,8 +4,8 @@ from fake_useragent import UserAgent
 
 def get_nishinomiya_center_availability(reservMon, reservDay):
 
-    riyosya_code = "<まなびねっとの利用者コードを入力>"
-    txt_password = "<まなびねっとのパスワードを入力>"
+    riyosya_code = os.environ.get("NISHI_ID")
+    txt_password = os.environ.get("NISHI_PASS")
 
     chrome_options = webdriver.ChromeOptions()
 
@@ -31,7 +31,7 @@ def get_nishinomiya_center_availability(reservMon, reservDay):
     pracStart = 11
     parcEnd = 17
 
-    # 操作するブラウザーを指定
+    # # 操作するブラウザーを指定
     driver = webdriver.Chrome(os.getcwd() + "/chromedriver",chrome_options=chrome_options)
     driver.get('http://yoyaku.nishi.or.jp/manabinet/Welcome.cgi')
 
