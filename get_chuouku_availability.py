@@ -205,7 +205,7 @@ height = driver.execute_script("return document.body.scrollHeight;")
 driver.set_window_size(width,height)
 
 #スクショをPNG形式で保存
-driver.get_screenshot_as_file("ss/" + fname + '_' + year + '-' + month + '-' + day +".png")
+driver.get_screenshot_as_file("ss/chuouku_availability_" + fname + '_' + year + '-' + month + '-' + day +".png")
 
 # 候補の公民館データを取得
 dl_repeat = driver.find_element_by_id('dlRepeat')
@@ -243,7 +243,7 @@ for i in range(len(dl_repeat.find_elements_by_tag_name('tr'))):
 
 print(df)
 # csvで出力
-df.to_csv("ss/" + fname + '_' + year + '-' + month + '-' + day + '.csv',index=False, encoding='utf-8-sig')
+df.to_csv("ss/chuouku_availability_" + fname + '_' + year + '-' + month + '-' + day + '.csv',index=False, encoding='utf-8-sig')
 
 # ブラウザを閉じる
 driver.quit()
