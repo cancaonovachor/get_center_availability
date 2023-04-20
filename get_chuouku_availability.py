@@ -12,18 +12,20 @@ import time
 import datetime
 import os
 import pandas as pd
+import sys
+from bs4 import BeautifulSoup
 
 # 日付を指定
 year = '2023'
-month = '04'
-day = '22'
+month = '05'
+day = '20'
 
 #ヘッドレス実行　※全画面用
 options = webdriver.ChromeOptions()
 options.add_argument('--headless')
 
 # Webドライバーを起動（動作確認したければoptionsを外す
-driver = webdriver.Chrome(executable_path='./chromedriver', options=options)
+driver = webdriver.Chrome(executable_path='./chromedriver',options=options)
 # 施設予約システムにアクセス
 driver.get("https://www.11489.jp/Chuo/Web/StartPage.aspx?language=JAPANESE")
 
@@ -38,6 +40,10 @@ shuukai.click()
 # 施設一覧をname属性でクリック
 shisetsu = driver.find_element_by_name('btnList')
 shisetsu.click()
+
+# dgShisetsuList(table属性)から、２列めと7列目のデータ取得
+# TODO: 本来はここで、施設数が変動しても対応できるようにリストを取得するべき
+# shisetsu_list = driver.find_element_by_id('dgShisetsuList')
 
 # 京橋区民間をname属性でクリック
 kyobashi = driver.find_element_by_name('dgShisetsuList$ctl02$chkSelectLeft')
@@ -199,9 +205,45 @@ height = driver.execute_script("return document.body.scrollHeight;")
 driver.set_window_size(width,height)
 
 #スクショをPNG形式で保存
-driver.get_screenshot_as_file("ss/" + fname + ".png")
+driver.get_screenshot_as_file("ss/" + fname + '_' + year + '-' + month + '-' + day +".png")
 
-time.sleep(3)
+# 候補の公民館データを取得
+dl_repeat = driver.find_element_by_id('dlRepeat')
+
+# 公民館ごとにtrタグがあるのでそれを取得
+df = pd.DataFrame()
+# forで回してindexとtrタグを取得
+for i in range(len(dl_repeat.find_elements_by_tag_name('tr'))):
+    # 最後のtrタグにデータが格納されているのでそれを取得
+    # NOTE: 最上層のtrだけとりだすべきだが、うまく動かないので、とりあえずむりやりtryで実施
+    print('dlRepeat_ctl0{}_tpItem_dgTable'.format(i))
+    print('dlRepeat_ctl0{}_tpItem_lnkShisetsu'.format(i))
+    
+    try:
+        data_table = dl_repeat.find_element_by_id('dlRepeat_ctl{:0=2}_tpItem_dgTable'.format(i))
+    except:
+        continue
+    print(dl_repeat.find_element_by_id('dlRepeat_ctl{:0=2}_tpItem_lnkShisetsu'.format(i)).text)
+    print(data_table)
+    # テーブルをdataframeに変換して取得
+    df_tmp = pd.read_html(data_table.get_attribute('outerHTML'),skiprows=1)[0]
+    print(df_tmp)
+    # 列名を指定
+    # 列数が足りなければ空白を追加（日本橋公会堂は9:00~12:00,13:00~17:00,18:00~21:30）
+    if len(df_tmp.columns) < 6:
+        df_tmp['21:00-22:00'] = ''
+    df_tmp.columns = ['部屋名','定員','9:00-12:00','13:00-17:00','18:00-21:00（日本橋公会堂は-21:30）','21:00-22:00']
+
+    # インデックスを振り直す
+    df_tmp = df_tmp.reset_index(drop=True)
+    # 部屋名にprefixをつける
+    df_tmp['部屋名'] = dl_repeat.find_element_by_id('dlRepeat_ctl{:0=2}_tpItem_lnkShisetsu'.format(i)).text + '_' + df_tmp['部屋名']
+    # データを追加
+    df = pd.concat([df,df_tmp],axis=0)
+
+print(df)
+# csvで出力
+df.to_csv("ss/" + fname + '_' + year + '-' + month + '-' + day + '.csv',index=False, encoding='utf-8-sig')
 
 # ブラウザを閉じる
 driver.quit()
